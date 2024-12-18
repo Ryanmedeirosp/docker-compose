@@ -1,0 +1,49 @@
+services:
+  nginx:
+    container_name: nginx
+    build:
+      dockerfile: ./nginx.dockerfile
+      context: . 
+    ports:
+      - "80:80"
+    networks:
+      - wordpress-net
+    volumes:
+      - wordpress_data:/var/www/html
+    depends_on:
+      - "php-fpm"
+      - "mariadb"
+
+  mariadb:
+    container_name: mariadb
+    build:
+      dockerfile: ./mariadb.dockerfile 
+      context: . 
+    ports:
+      - "3306:3306"
+    environment:
+      -  MYSQL_ROOT_PASSWORD=1234
+      -  MYSQL_DATABASE=wordpress
+      -  MYSQL_USER=user
+      -  MYSQL_PASSWORD=1234
+    networks:
+      -  wordpress-net
+  php-fpm:
+    container_name: php-fpm
+    build:
+      dockerfile: ./php-fpm.dockerfile 
+      context: .
+    ports:
+      - "9000:9000"
+    networks:
+      - wordpress-net
+    volumes:
+      - wordpress_data:/var/www/html
+    depends_on:
+      - "mariadb"
+networks:
+  wordpress-net:
+    driver: bridge
+volumes:
+  wordpress_data:
+    external: true
