@@ -8,12 +8,27 @@ services:
       - "80:80"
     networks:
       - wordpress-net
+    healthcheck:
+      test: ["CMD", "curl", "--silent", "--fail", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     volumes:
       - wordpress_data:/var/www/html
     depends_on:
-      - "php-fpm"
-      - "mariadb"
-
+      php-fpm:
+        condition: service_healthy
+      mariadb:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 50M
+        reservations:
+          cpus: '0.25'
+          memory: 20M
   mariadb:
     container_name: mariadb
     build:
@@ -21,29 +36,56 @@ services:
       context: . 
     ports:
       - "3306:3306"
-    environment:
-      -  MYSQL_ROOT_PASSWORD=1234
-      -  MYSQL_DATABASE=wordpress
-      -  MYSQL_USER=user
-      -  MYSQL_PASSWORD=1234
+    env_file:
+      - mariadb_env
     networks:
-      -  wordpress-net
+      - wordpress-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 50M
+        reservations:
+          cpus: '0.25'
+          memory: 20M
   php-fpm:
     container_name: php-fpm
     build:
       dockerfile: ./php-fpm.dockerfile 
-      context: .
+      context: . 
     ports:
       - "9000:9000"
     networks:
       - wordpress-net
+    healthcheck:
+      test: ["CMD", "php-fpm8.3", "-t"]
+      interval: 30s               
+      timeout: 10s                
+      retries: 10                 
+      start_period: 60s  
     volumes:
       - wordpress_data:/var/www/html
     depends_on:
-      - "mariadb"
+      mariadb:
+        condition: service_healthy 
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 50M
+        reservations:
+          cpus: '0.25'
+          memory: 20M
 networks:
   wordpress-net:
     driver: bridge
+
 volumes:
   wordpress_data:
     external: true

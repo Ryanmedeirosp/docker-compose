@@ -13,8 +13,10 @@ WORKDIR /var/www/html
 
 
 #Config wordpress
-RUN wget https://wordpress.org/latest.tar.gz && tar -xvzf latest.tar.gz
-RUN chown -R www-data: /var/www/html/ && chmod -R 755 /var/www/html/
+ADD https://wordpress.org/latest.tar.gz /var/www/html
+RUN tar -xvzf latest.tar.gz && \
+chown -R www-data: /var/www/html/ && \
+chmod -R 755 /var/www/html/
 COPY ./wp-config.php /var/www/html/wordpress/wp-config.php
 
 
